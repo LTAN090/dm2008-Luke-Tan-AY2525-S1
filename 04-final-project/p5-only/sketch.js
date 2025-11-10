@@ -1,8 +1,9 @@
 let Button;
 let myPlayer;
 let life = 5;
-
+let bombs = 1;
 let bulletLevel = 1;
+let bulletStrength = 1;
 let bulletSpeed = 10;
 let bulletSize = 10;
 let playerBullets = [];
@@ -10,11 +11,11 @@ let enemyBullets = [];
 let playerAngle;
 let playerInvul = 0;
 let invulCD = 0;
-
+let explosion = [];
 let enemies = [];
 let pickups =[];
 let r;
-
+let score = 0;
 let gameState = 0;
 let timer = 0;
 let count = 0;
@@ -43,6 +44,7 @@ function draw() {
     background(0);
     //time based spawn
     switch (timer){
+      
       case 120:
         enemies.push(new Enemy(width/2, 1, 50, 1, 1, 0.5));
         counts.push(0);
@@ -55,12 +57,8 @@ function draw() {
         enemies.push(new Enemy(width/2, 1, 50, 1, 1, 0.5));
         counts.push(0);
         break;
-      case 300:
-        enemies.push(new Enemy(width/2, 1, 50, 1, 1, 0.5));
-        counts.push(0);
-        break;
-      case 360:
-        enemies.push(new Enemy(width/2, 1, 50, 1, 1, 0.5));
+      case 780:
+        enemies.push(new Enemy(width/2, 1, 50, 3, 0, 1));//type 3
         counts.push(0);
         break;
       case 1200:
@@ -71,6 +69,14 @@ function draw() {
         break;
       case 1260:
         enemies.push(new Enemy(1, 50, 50, 2, 0.5, 0)); //type 2
+        counts.push(0);
+        break;
+      case 2000:
+        enemies.push(new Enemy(width-1, 1, 50, 3, -1, 1));//type 3
+        counts.push(0);
+        break;
+      case 2010:
+        enemies.push(new Enemy(1, 1, 50, 3, 1, 1));//type 3
         counts.push(0);
         break;
       case 2760:
@@ -119,9 +125,12 @@ function draw() {
           }
           if (enemies[i].hp <= 0) {
             r = random(1, 100);
-            if (r <= 20){
+            if (r <= 10){
               pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 1));
+            } else if (r >= 90){
+              pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 4));
             }
+            score++;
             enemies.splice(i, 1);
             counts.splice(i, 1);
           }
@@ -133,9 +142,28 @@ function draw() {
             }
           }
           if (enemies[i].hp <= 0) {
-            bulletSpeed +=5;
-            bulletSize += 5;
-            frequency -= 3;
+            r = random(1, 100);
+            if (r <= 50){
+              pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 2));
+            } else if (r >= 80){
+              pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 4));
+            }
+            score++;
+            enemies.splice(i, 1);
+            counts.splice(i, 1);
+          }
+          break;
+        case 3:
+          if (fract(counts[i]/180) == 0) {
+            playerAngle = myPlayer.pos.sub(enemies[i].pos);
+            enemyBullets.push(new EnemyBullet(enemies[i].pos.x, enemies[i].pos.y, playerAngle.heading(), 25, 3));
+          }
+          if (enemies[i].hp <= 0) {
+            r = random(1, 100);
+            if (r <= 80){
+              pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 3));
+            }
+            score++;
             enemies.splice(i, 1);
             counts.splice(i, 1);
           }
@@ -158,7 +186,25 @@ function draw() {
       invulCD++;
     }
     if (fract(timer/frequency) == 0) {
-      playerBullets.push(new PlayerBullet());
+      switch (bulletLevel){
+        case 1:
+          playerBullets.push(new PlayerBullet(mouseX, mouseY, 4.71));
+          break;
+        case 2:
+          playerBullets.push(new PlayerBullet(mouseX, mouseY, 4.71));
+          playerBullets.push(new PlayerBullet(mouseX, mouseY, 5.23));
+          playerBullets.push(new PlayerBullet(mouseX, mouseY, 4.19));
+          break;
+        case 3:
+          playerBullets.push(new PlayerBullet(mouseX+10, mouseY, 4.71));
+          playerBullets.push(new PlayerBullet(mouseX-10, mouseY, 4.71));
+          playerBullets.push(new PlayerBullet(mouseX, mouseY, 5.23));
+          playerBullets.push(new PlayerBullet(mouseX, mouseY, 4.19));
+          break;
+        default:
+          break;
+      }
+      
     }
 
     
@@ -176,7 +222,7 @@ function draw() {
       }
     }
     for (let i = 0; i < enemyBullets.length; i++) {
-      if (enemyBullets[i].pos.x > width+10 || enemyBullets[i].pos.x < -10 || enemyBullets[i].pos.y > height) {
+      if (enemyBullets[i].pos.x > width+10 || enemyBullets[i].pos.x < -10 || enemyBullets[i].pos.y > height+5 || enemyBullets[i].life <= 0) {
         enemyBullets.splice(i, 1);
       }
     }
@@ -190,6 +236,12 @@ function draw() {
     }
     for (let i = 0; i < counts.length; i++) {
       counts[i]++;
+    }
+    for (let i = 0; i < explosion.length; i++) {
+      explosion[i].show();
+      if (explosion[i].size > height){
+        explosion.splice(i,1);
+      }
     }
     timer++;
     if(life <= 0){
@@ -260,7 +312,29 @@ class Player {
       let p = ps[i];
       let d = dist(this.pos.x, this.pos.y, p.pos.x, p.pos.y);
       if (d < this.size/2 + 12) {
-        life +=1;
+        switch (p.type){
+          case 1:
+            if(life < 5){
+              life +=1;
+            }
+            break;
+          case 2:
+            if (bulletStrength < 4){
+              bulletSize +=2;
+              bulletStrength +=1;
+            }
+            break;
+          case 3:
+            if (bulletLevel < 3){
+              bulletLevel +=1;
+            }
+            break;
+          case 4:
+            bombs++;
+            break;
+          default:
+            break;
+        }
         ps.splice(i, 1);
       }
     }
@@ -268,17 +342,36 @@ class Player {
 }
 
 class PlayerBullet {
-  constructor() {
+  constructor(x, y, a) {
     this.size = bulletSize;
     this.spd = bulletSpeed;
-    this.pos = createVector(mouseX, mouseY);
+    this.pos = createVector(x, y);
+    this.vel = p5.Vector.fromAngle(a, 10);
   }
   show() {
-    fill("#00F0FF");
-    ellipse(this.pos.x, this.pos.y, this.size);
+    switch (bulletStrength){
+      case 1:
+        fill("#00F0FF");
+        ellipse(this.pos.x, this.pos.y, this.size);
+        break;
+      case 2:
+        fill("#00F0FF");
+        triangle(this.pos.x-this.size/1.732, this.pos.y+this.size/2, this.pos.x+this.size/1.732, this.pos.y+this.size/2, this.pos.x, this.pos.y-this.size/2);
+        break;
+      case 3:
+        fill("#ff00ffff");
+        ellipse(this.pos.x, this.pos.y, this.size);
+        break;
+      case 4:
+        fill("#ff00ffff");
+        triangle(this.pos.x-this.size/1.732, this.pos.y+this.size/2, this.pos.x+this.size/1.732, this.pos.y+this.size/2, this.pos.x, this.pos.y-this.size/2);
+        break;
+      default:
+        break;
+    }  
   }
   move() {
-    this.pos.y -= this.spd;
+    this.pos.add(this.vel);
   }
 }
 
@@ -290,30 +383,64 @@ class Enemy {
     this.type = type;
     switch (type){
       case 1:
-        this.hp = 5;
+        this.hp = 10;
         break;
       case 2:
-        this.hp = 10;
+        this.hp = 20;
+        break;
+      case 3:
+        this.hp = 15;
         break;
       default:
         break;
     }
   }
   show() {
-    if(this.type == 1){
-      fill("#536B08");
-    } else if(this.type == 2){
-      fill("#C000B7");
+    switch (this.type){
+      case 1:
+        fill("#536B08");
+        break;
+      case 2:
+        fill("#C000B7");
+        break;
+      case 3:
+        fill("#4a00c0ff");
+        break;
+      default:
+        break;
     }
     ellipse(this.pos.x, this.pos.y, this.size);
   }
   move(){
     this.pos.add(this.vel);
-    if(this.pos.x <= 0 || this.pos.x >= width){
-      this.vel.x *= (-1);
-    }
-    if(this.pos.y <= 0 || this.pos.y >= height/2){
-      this.vel.y *= (-1);
+    if(this.type == 3){
+      if(this.pos.x <= 0){
+        this.pos.x = 1;
+        this.vel.x = (random(0.5, 2));
+        this.vel.y = (random(-2, 2));
+      }
+      if(this.pos.x >= width){
+        this.pos.x = width -1;
+        this.vel.x = (-random(0.5, 2));
+        this.vel.y = (random(-2, 2));
+      }
+      if(this.pos.y <= 0){
+        this.pos.y=1;
+        this.vel.x = (random(-2, 2));
+        this.vel.y = (random(0.5, 2));
+      }
+      if(this.pos.y >= 3*height/4){
+        this.pos.y = 3*height/4-1;
+        this.vel.x = (random(-2, 2));
+        this.vel.y = (-random(0.5, 2));
+      }
+    } else {
+      if(this.pos.x <= 0 || this.pos.x >= width){
+        this.vel.x *= (-1);
+      }
+      if(this.pos.y <= 0 || this.pos.y >= height/2){
+        this.vel.y *= (-1);
+      }
     }
   }
   checkCollision(blts) {
@@ -322,7 +449,7 @@ class Enemy {
       let d = dist(this.pos.x, this.pos.y, blt.pos.x, blt.pos.y);
       if (d < this.size/2 + blt.size/2) {
         fill("#FFFFFF");
-        this.hp--;
+        this.hp-=bulletStrength;
         ellipse(this.pos.x, this.pos.y, this.size);
         blts.splice(i, 1);
       }
@@ -336,28 +463,43 @@ class EnemyBullet {
     this.pos = createVector(x, y);
     this.vel = p5.Vector.fromAngle(a, 3);
     this.type = t;
+    //this.life = 1;
+    if (t==3){
+      this.life = 3;
+      this.vel = p5.Vector.fromAngle(a, 5);
+    } else if (t==4){
+      this.life = 60;
+    }
   }
   show() {
     switch (this.type){
       case 1:
-        fill("#b0fa04ff");
-        ellipse(this.pos.x, this.pos.y, this.size);
+        fill("#fcd546ff");
+        rect(this.pos.x, this.pos.y, this.size);
         break;
       case 2:
-        fill("#FF0000");
+        fill("#ff3c00ff");
+        ellipse(this.pos.x, this.pos.y, this.size);
+        break;
+      case 3:
+        fill("#ff7700ff");
         ellipse(this.pos.x, this.pos.y, this.size);
         break;
       default:
         break;
     }
-    
   }
   move() {
     this.pos.add(this.vel);
     if(this.type == 3){
       if(this.pos.x <= 0 || this.pos.x >= width){
-      this.vel.x *= (-1);
-    }
+        this.vel.x *= (-1);
+        this.life--;
+      }
+      if(this.pos.y <= 0 || this.pos.y >= height){
+        this.vel.y *= (-1);
+        this.life--;
+      } 
     }
   }
 }
@@ -370,15 +512,34 @@ class Pickup {
   }
   show() {
     push();
-    if(this.type == 1){
-      strokeWeight(0);
-      fill("#09d127ff");
-      rect(this.pos.x, this.pos.y, 25, 10);
-      rect(this.pos.x, this.pos.y, 10, 25);
-      
-    } else if(this.type == 2){
-      fill("#e6b40fff");
-      ellipse(this.pos.x, this.pos.y, 25);
+    strokeWeight(0);
+    switch (this.type){
+      case 1:
+        fill("#09d127ff");
+        rect(this.pos.x, this.pos.y, 25, 10);
+        rect(this.pos.x, this.pos.y, 10, 25);
+        break;
+      case 2:
+        fill("#e6b40fff");
+        rect(this.pos.x, this.pos.y+10, 25, 5);
+        rect(this.pos.x, this.pos.y+7, 8, 25);
+        triangle(this.pos.x+4, this.pos.y-5, this.pos.x-4, this.pos.y-5, this.pos.x, this.pos.y-14,);
+        break;
+      case 3:
+        fill("#00d5ffff");
+        rect(this.pos.x, this.pos.y+10, 24, 4);
+        triangle(this.pos.x+4, this.pos.y+12, this.pos.x-4, this.pos.y+12, this.pos.x, this.pos.y-14,);
+        triangle(this.pos.x+12, this.pos.y+12, this.pos.x+6, this.pos.y+12, this.pos.x+12, this.pos.y-14,);
+        triangle(this.pos.x-12, this.pos.y+12, this.pos.x-6, this.pos.y+12, this.pos.x-12, this.pos.y-14,);
+        break;
+      case 4:
+        strokeWeight(4);
+        stroke("#ffffffff");
+        noFill();
+        ellipse(this.pos.x, this.pos.y, 20);
+        break;
+      default:
+        break;
     }
     pop();
   }
@@ -387,23 +548,52 @@ class Pickup {
   }
 }
 
+class Explosion {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.size = 1;
+  }
+  show() {
+    push();
+    strokeWeight(20);
+    stroke("#ffffffff");
+    noFill();
+    ellipse(this.x, this.y, this.size);
+    pop();
+    this.size+=20;
+  }
+
+}
+
 function keyPressed() {
   if (gameState == 0 && key === " ") {
     gameState = 1;
-    
+    score = 0;
   }
 }
 function mousePressed(){
-  if (gameState == 3 && key === " ") {
+  if (gameState == 3) {
     timer = 0;
     count = 0;
     life = 5;
     bulletSpeed = 10;
+    bulletStrength = 1;
     bulletSize = 10;
     bulletLevel = 1;
     frequency = 20;
     playerInvul = 0;
     invulCD = 0;
     gameState = 0;
+    bombs = 1;
+  } else if (gameState == 1){
+    if (bombs >=1){
+      enemyBullets.length = 0;
+      for (let i = 0; i < enemies.length; i++) {
+        enemies[i].hp -= 5;
+      }
+      explosion.push(new Explosion(mouseX, mouseY));
+      bombs--;
+    }
   }
 }
