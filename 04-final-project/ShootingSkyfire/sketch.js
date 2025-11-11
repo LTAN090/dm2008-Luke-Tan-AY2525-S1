@@ -23,7 +23,7 @@ let count = 0;
 let counts=[];
 let frequency = 20;
 let stageBGM, hitSE, startSE, endSE, menuBGM, laserSE, bombSE, pickupSE, killSE, bossBGM;
-let stageBG, menuBG, endBG, enemya, enemyb, enemyc, boss, ship, ship2, click;
+let stageBG, menuBG, winBG, endBG, enemya, enemyb, enemyc, boss, ship, ship2, click;
 //framerate = 60
 function setup() {
   createCanvas(600, 690);
@@ -41,6 +41,7 @@ function preload() {
   stageBG = loadImage("assets/DarkClouds.png");
   menuBG = loadImage("assets/Mountains1.png");
   endBG = loadImage("assets/StarlitSky.png");
+  winBG = loadImage("assets/Clouds.png");
   enemya = loadImage("assets/enemy12.png");
   enemyb = loadImage("assets/enemy2.png");
   enemyc = loadImage("assets/enemy3.png");
@@ -66,8 +67,13 @@ function draw() {
   if (gameState == 0){
     background("#060145");
     image(menuBG, width/2, height/2);
+    push();
+    fill("#c44f02ff");
+    textStyle(BOLD);
+    text("SHOOTING SKYFIRE", 150, 250);
     fill("#000000ff");
     text("SPACE TO START", 170, 450);
+    pop();
   }
   if (gameState == 1){
     background(0);
@@ -228,12 +234,12 @@ function draw() {
             }
           }
           if (enemies[i].hp <= 0) {
-            r = random(1, 100);
-            if (r <= 50){
+            //r = random(1, 100);
+            //if (r <= 50){
               pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 2));
-            } else if (r >= 80){
-              pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 4));
-            }
+            //} else if (r >= 80){
+              //pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 4));
+            //}
             killSE.play();
             score++;
             enemies.splice(i, 1);
@@ -246,10 +252,12 @@ function draw() {
             enemyBullets.push(new EnemyBullet(enemies[i].pos.x, enemies[i].pos.y, playerAngle.heading(), 25, 3, 5, 3));
           }
           if (enemies[i].hp <= 0) {
-            r = random(1, 100);
-            if (r <= 80){
+            //r = random(1, 100);
+            //if (r <= 50){
               pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 3));
-            }
+            //} else if (r > 50){
+              //pickups.push(new Pickup(enemies[i].pos.x, enemies[i].pos.y, 2));
+            //}
             killSE.play();
             score++;
             enemies.splice(i, 1);
@@ -257,13 +265,19 @@ function draw() {
           }
           break;
         case 4:
-          if (enemies[i].hp <= 400 && enemies[i].hp >= 395) {
+          if (enemies[i].hp <= 2500 && enemies[i].hp >= 2495) {
             pickups.push(new Pickup(random(200, 400), enemies[i].pos.y, 1));
           }
           if (enemies[i].hp <= 0) {
             killSE.play();
             score+=14;
             enemies.splice(i, 1);
+            gameState = 2;
+            enemies.length = 0;
+            counts.length = 0;
+            playerBullets.length = 0;
+            enemyBullets.length = 0;
+            bossBGM.stop();
           }
           break;
         default:
@@ -294,7 +308,7 @@ function draw() {
       invulCD++;
     }
     if (fract(timer/frequency) == 0) {
-      laserSE.play();
+      //laserSE.play();
       switch (bulletLevel){
         case 1:
           playerBullets.push(new PlayerBullet(mouseX, mouseY, 4.71));
@@ -369,8 +383,12 @@ function draw() {
     rect(width/2, height, width, 80);
     fill("#ffffffff");
     textSize(18);
+    push();
+    textStyle(BOLD);
+    fill("#09d127ff");
     text("Lives:", 5, 680);
     text(life, 55, 680);
+    pop();
     text("Score:", 75, 680);
     text(score, 130, 680);
     image(click, 250, 670);
@@ -385,6 +403,13 @@ function draw() {
 
     timer++;
     if (score == 16){
+      push();
+      rectMode(CORNER);
+      fill("#620000ff");
+      for (let i = 0; i < enemies.length; i++) {
+      rect(50, 50, enemies[i].hp/10, 20);
+      }
+      pop();
       bossTimer++;
       if (bossTimer >=3300){
         bossTimer = 180;
@@ -403,8 +428,24 @@ function draw() {
   }
   if (gameState == 3){
     background("#450142");
+    image(endBG, width/2, height/2);
+    push();
+    textStyle(BOLD);
     fill("#E20A0A");
-    text("GAME OVER", 170, 450);
+    text("GAME OVER", 200, 450);
+    pop();
+  }
+  if (gameState == 2){
+    background("#450142");
+    image(winBG, width/2, height/2);
+    push();
+    textStyle(BOLD);
+    fill("#005a00ff");
+    text("VICTORY", 230, 250);
+    fill("#ffffffff");
+    text("SCORE:", 230, 450);
+    text(score, 370, 450);
+    pop();
   }
 }
 
@@ -577,7 +618,7 @@ class Enemy {
         this.hp = 15;
         break;
       case 4:
-        this.hp = 800;
+        this.hp = 5000;
         break;
       default:
         break;
@@ -825,8 +866,8 @@ function keyPressed() {
   }
 }
 function mousePressed(){
-  if (gameState == 3) {
-    menuBGM.loop();
+  if (gameState == 3 || gameState == 2) {
+    //menuBGM.loop();
     bossTimer = 0;
     timer = 0;
     count = 0;
