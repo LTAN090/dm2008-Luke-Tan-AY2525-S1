@@ -22,6 +22,7 @@ let bossTimer = 0;
 let count = 0;
 let counts=[];
 let frequency = 20;
+let dropToggle = 0;
 let stageBGM, hitSE, startSE, endSE, menuBGM, laserSE, bombSE, pickupSE, killSE, bossBGM;
 let stageBG, menuBG, winBG, endBG, enemya, enemyb, enemyc, boss, ship, ship2, click;
 //framerate = 60
@@ -265,8 +266,13 @@ function draw() {
           }
           break;
         case 4:
-          if (enemies[i].hp <= 2500 && enemies[i].hp >= 2495) {
-            pickups.push(new Pickup(random(200, 400), enemies[i].pos.y, 1));
+          if (enemies[i].hp <= 2000) {
+            if(dropToggle == 0){
+              pickups.push(new Pickup(random(200, 400), enemies[i].pos.y, 1));
+              pickups.push(new Pickup(random(200, 400), enemies[i].pos.y, 1));
+              pickups.push(new Pickup(random(200, 400), enemies[i].pos.y, 1));
+              dropToggle = 1;
+            }
           }
           if (enemies[i].hp <= 0) {
             killSE.play();
@@ -407,7 +413,7 @@ function draw() {
       rectMode(CORNER);
       fill("#620000ff");
       for (let i = 0; i < enemies.length; i++) {
-      rect(50, 50, enemies[i].hp/10, 20);
+      rect(50, 50, enemies[i].hp/8, 20);
       }
       pop();
       bossTimer++;
@@ -618,7 +624,7 @@ class Enemy {
         this.hp = 15;
         break;
       case 4:
-        this.hp = 5000;
+        this.hp = 4000;
         break;
       default:
         break;
@@ -881,6 +887,7 @@ function mousePressed(){
     invulCD = 0;
     gameState = 0;
     bombs = 1;
+    dropToggle = 0;
   } else if (gameState == 1){
     if (bombs >=1){
       bombSE.play();
